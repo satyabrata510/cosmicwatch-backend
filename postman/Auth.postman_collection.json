@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "Cosmic Watch — Auth",
+    "description": "Authentication & user management endpoints.\n\n**Rate Limit**: 10 requests / 15 minutes\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Register (User)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@cosmicwatch.dev\",\n  \"password\": \"Cosmic123\",\n  \"role\": \"USER\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "register"]
+        },
+        "description": "Register a new user account.\n\n**Validation Rules:**\n- `name`: 2–100 characters\n- `email`: Valid email format\n- `password`: Min 8 chars, at least 1 uppercase, 1 lowercase, 1 number\n- `role`: Optional — `USER` (default) or `RESEARCHER`"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Response contains user and tokens', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('user');",
+              "    pm.expect(json.data).to.have.property('accessToken');",
+              "    pm.expect(json.data).to.have.property('refreshToken');",
+              "});",
+              "",
+              "pm.test('Auto-set environment variables', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data) {",
+              "        pm.environment.set('accessToken', json.data.accessToken);",
+              "        pm.environment.set('refreshToken', json.data.refreshToken);",
+              "        pm.environment.set('userId', json.data.user.id);",
+              "        pm.environment.set('userEmail', json.data.user.email);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Register (Researcher)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Dr. Sarah Chen\",\n  \"email\": \"sarah@cosmicwatch.dev\",\n  \"password\": \"Research123\",\n  \"role\": \"RESEARCHER\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "register"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('User role is RESEARCHER', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data.user.role).to.equal('RESEARCHER');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@cosmicwatch.dev\",\n  \"password\": \"Cosmic123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response contains user and tokens', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('accessToken');",
+              "    pm.expect(json.data).to.have.property('refreshToken');",
+              "});",
+              "",
+              "pm.test('Auto-set environment variables', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data) {",
+              "        pm.environment.set('accessToken', json.data.accessToken);",
+              "        pm.environment.set('refreshToken', json.data.refreshToken);",
+              "        pm.environment.set('userId', json.data.user.id);",
+              "        pm.environment.set('userEmail', json.data.user.email);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login — Invalid Credentials",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"john@cosmicwatch.dev\",\n  \"password\": \"WrongPassword1\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 401', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Returns error message', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/refresh",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "refresh"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('New tokens returned', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.data).to.have.property('accessToken');",
+              "    pm.expect(json.data).to.have.property('refreshToken');",
+              "});",
+              "",
+              "pm.test('Auto-update environment tokens', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data) {",
+              "        pm.environment.set('accessToken', json.data.accessToken);",
+              "        pm.environment.set('refreshToken', json.data.refreshToken);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Profile",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/auth/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "profile"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Profile data returned', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('id');",
+              "    pm.expect(json.data).to.have.property('name');",
+              "    pm.expect(json.data).to.have.property('email');",
+              "    pm.expect(json.data).to.have.property('role');",
+              "    pm.expect(json.data).to.not.have.property('password');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Profile — Unauthenticated",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/auth/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "profile"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 401', function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test('Returns unauthorized error', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

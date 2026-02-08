@@ -1,0 +1,31 @@
+# ── Node.js ──────────────────────────────────────────────────
+node_modules/
+dist/
+coverage/
+.nyc_output/
+*.tgz
+
+# ── Python ───────────────────────────────────────────────────
+risk-engine/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+
+# ── Environment & Secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── IDE ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ── OS ───────────────────────────────────────────────────────
+.DS_Store
+*.log
+
+# ── Prisma Generated ────────────────────────────────────────
+/src/generated/prisma
+docs/api

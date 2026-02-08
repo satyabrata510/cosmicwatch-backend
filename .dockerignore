@@ -1,0 +1,39 @@
+# ── Node.js ──────────────────────────────────────────────────
+node_modules
+dist
+coverage
+.nyc_output
+
+# ── Python ───────────────────────────────────────────────────
+risk-engine/venv
+risk-engine/__pycache__
+risk-engine/app/__pycache__
+risk-engine/app/routes/__pycache__
+**/__pycache__
+*.pyc
+*.pyo
+
+# ── Environment & Secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Git & IDE ────────────────────────────────────────────────
+.git
+.gitignore
+.vscode
+.idea
+
+# ── Docs & Meta ──────────────────────────────────────────────
+*.md
+docs/
+postman/
+LICENSE
+
+# ── Docker (prevent recursive copy) ─────────────────────────
+.dockerignore
+docker-compose*.yml
+
+# ── Misc ─────────────────────────────────────────────────────
+*.log
+.DS_Store

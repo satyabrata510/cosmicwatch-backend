@@ -1,0 +1,162 @@
+{
+  "info": {
+    "name": "Cosmic Watch — Space Weather (DONKI)",
+    "description": "NASA DONKI — Space Weather Database Of Notifications, Knowledge, Information.\nCME, Solar Flares, Geomagnetic Storms, Notifications.\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Coronal Mass Ejections",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/space-weather/cme",
+          "host": ["{{baseUrl}}"],
+          "path": ["space-weather", "cme"],
+          "query": [
+            { "key": "start_date", "value": "2026-01-01", "disabled": true },
+            { "key": "end_date", "value": "2026-01-31", "disabled": true }
+          ]
+        },
+        "description": "Get Coronal Mass Ejection events. Default: last 30 days."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('CME data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('events');",
+              "    pm.expect(json.data.events).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Solar Flares",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/space-weather/flares",
+          "host": ["{{baseUrl}}"],
+          "path": ["space-weather", "flares"],
+          "query": [
+            { "key": "start_date", "value": "2026-01-01", "disabled": true },
+            { "key": "end_date", "value": "2026-01-31", "disabled": true }
+          ]
+        },
+        "description": "Get solar flare events with classification (X, M, C class)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Solar flare data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('events');",
+              "    pm.expect(json.data).to.have.property('summary');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Geomagnetic Storms",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/space-weather/storms",
+          "host": ["{{baseUrl}}"],
+          "path": ["space-weather", "storms"],
+          "query": [
+            { "key": "start_date", "value": "2026-01-01", "disabled": true },
+            { "key": "end_date", "value": "2026-01-31", "disabled": true }
+          ]
+        },
+        "description": "Get geomagnetic storm events with Kp index and G-scale classification."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Storm data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('events');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Space Weather Notifications",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/space-weather/notifications",
+          "host": ["{{baseUrl}}"],
+          "path": ["space-weather", "notifications"],
+          "query": [
+            { "key": "start_date", "value": "2026-01-01", "disabled": true },
+            { "key": "end_date", "value": "2026-01-31", "disabled": true },
+            { "key": "type", "value": "CME", "disabled": true }
+          ]
+        },
+        "description": "Get space weather notifications and alerts from DONKI."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Notifications data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('notifications');",
+              "    pm.expect(json.data.notifications).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

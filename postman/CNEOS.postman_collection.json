@@ -1,0 +1,182 @@
+{
+  "info": {
+    "name": "Cosmic Watch — CNEOS (SSD)",
+    "description": "JPL Small-Body Database & CNEOS APIs.\nClose Approach, Sentry Impact Monitoring, Fireball/Bolide Data.\n\n**No API key required.**\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Close Approaches",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/cneos/close-approaches?dist_max=10LD",
+          "host": ["{{baseUrl}}"],
+          "path": ["cneos", "close-approaches"],
+          "query": [
+            { "key": "dist_max", "value": "10LD", "description": "Max distance (default 10 Lunar Distances)" },
+            { "key": "date_min", "value": "now", "disabled": true },
+            { "key": "date_max", "value": "+60", "disabled": true },
+            { "key": "sort", "value": "dist", "disabled": true },
+            { "key": "limit", "value": "20", "disabled": true }
+          ]
+        },
+        "description": "Get upcoming close approach data for NEOs. Default: next 60 days within 10 LD."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Close approach data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('approaches');",
+              "    pm.expect(json.data.approaches).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Approach objects have required fields', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data.approaches.length > 0) {",
+              "        const a = json.data.approaches[0];",
+              "        pm.expect(a).to.have.property('designation');",
+              "        pm.expect(a).to.have.property('approachDate');",
+              "        pm.expect(a).to.have.property('distanceKm');",
+              "        pm.expect(a).to.have.property('distanceLunar');",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sentry List",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/cneos/sentry",
+          "host": ["{{baseUrl}}"],
+          "path": ["cneos", "sentry"],
+          "query": [
+            { "key": "ps_min", "value": "-3", "disabled": true, "description": "Min Palermo scale" },
+            { "key": "ip_min", "value": "1e-10", "disabled": true },
+            { "key": "h_max", "value": "30", "disabled": true }
+          ]
+        },
+        "description": "List all objects monitored by CNEOS Sentry impact monitoring system."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Sentry list structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('objects');",
+              "    pm.expect(json.data.objects).to.be.an('array');",
+              "});",
+              "",
+              "pm.test('Save first sentry designation', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data.objects && json.data.objects.length > 0) {",
+              "        pm.environment.set('sentryDesignation', json.data.objects[0].designation);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sentry Detail",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/cneos/sentry/{{sentryDesignation}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["cneos", "sentry", "{{sentryDesignation}}"]
+        },
+        "description": "Get detailed Sentry data for a specific object including all virtual impactors."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Sentry detail structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('designation');",
+              "    pm.expect(json.data).to.have.property('cumulativeImpactProbability');",
+              "    pm.expect(json.data).to.have.property('palermoCumulative');",
+              "    pm.expect(json.data).to.have.property('virtualImpactors');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Fireballs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/cneos/fireballs?limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["cneos", "fireballs"],
+          "query": [
+            { "key": "limit", "value": "10" },
+            { "key": "date_min", "value": "2024-01-01", "disabled": true },
+            { "key": "energy_min", "value": "0.1", "disabled": true }
+          ]
+        },
+        "description": "Get fireball (bolide) atmospheric entry event data."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Fireball data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalCount');",
+              "    pm.expect(json.data).to.have.property('fireballs');",
+              "    pm.expect(json.data.fireballs).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "info": {
+    "name": "Cosmic Watch — NASA Media",
+    "description": "NASA Image & Video Library.\nSearch and retrieve NASA media assets.\n\n**No API key required.**\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Search Media",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/media/search?q=asteroid&media_type=image&page=1",
+          "host": ["{{baseUrl}}"],
+          "path": ["media", "search"],
+          "query": [
+            { "key": "q", "value": "asteroid", "description": "Search query (required)" },
+            { "key": "media_type", "value": "image", "description": "image, video, or audio" },
+            { "key": "page", "value": "1" },
+            { "key": "year_start", "value": "2020", "disabled": true },
+            { "key": "year_end", "value": "2026", "disabled": true }
+          ]
+        },
+        "description": "Search NASA Image and Video Library."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Media search data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalHits');",
+              "    pm.expect(json.data).to.have.property('query');",
+              "    pm.expect(json.data).to.have.property('items');",
+              "    pm.expect(json.data.items).to.be.an('array');",
+              "    pm.expect(json.data).to.have.property('hasMore');",
+              "});",
+              "",
+              "pm.test('Save first NASA ID for asset lookup', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data.items && json.data.items.length > 0) {",
+              "        pm.environment.set('nasaMediaId', json.data.items[0].nasaId);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Asset Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/media/asset/{{nasaMediaId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["media", "asset", "{{nasaMediaId}}"]
+        },
+        "description": "Get all asset files for a specific NASA media ID."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Asset data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.be.an('array');",
+              "    if (json.data.length > 0) {",
+              "        pm.expect(json.data[0]).to.have.property('url');",
+              "        pm.expect(json.data[0]).to.have.property('type');",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

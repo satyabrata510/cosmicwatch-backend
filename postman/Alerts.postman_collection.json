@@ -1,0 +1,172 @@
+{
+  "info": {
+    "name": "Cosmic Watch — Alerts",
+    "description": "Manage automated alerts for close approach events.\n\n**All routes require authentication** (Bearer token).\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Get Alerts",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/alerts?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["alerts"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "20" },
+            { "key": "unread", "value": "false", "disabled": true }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Paginated alerts response', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.be.an('array');",
+              "    pm.expect(json.meta).to.have.property('page');",
+              "    pm.expect(json.meta).to.have.property('total');",
+              "});",
+              "",
+              "pm.test('Save first alert ID', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data && json.data.length > 0) {",
+              "        pm.environment.set('alertId', json.data[0].id);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Alerts (Unread Only)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/alerts?unread=true",
+          "host": ["{{baseUrl}}"],
+          "path": ["alerts"],
+          "query": [{ "key": "unread", "value": "true" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('All returned alerts are unread', function () {",
+              "    const json = pm.response.json();",
+              "    if (json.data && json.data.length > 0) {",
+              "        json.data.forEach(function(alert) {",
+              "            pm.expect(alert.isRead).to.be.false;",
+              "        });",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Unread Count",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/alerts/unread-count",
+          "host": ["{{baseUrl}}"],
+          "path": ["alerts", "unread-count"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Unread count returned', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('count');",
+              "    pm.expect(json.data.count).to.be.a('number');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mark Alert as Read",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/alerts/{{alertId}}/read",
+          "host": ["{{baseUrl}}"],
+          "path": ["alerts", "{{alertId}}", "read"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Mark All Alerts as Read",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/alerts/read-all",
+          "host": ["{{baseUrl}}"],
+          "path": ["alerts", "read-all"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

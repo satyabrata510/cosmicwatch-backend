@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "Cosmic Watch — APOD",
+    "description": "Astronomy Picture of the Day.\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Get Today's APOD",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/apod/today",
+          "host": ["{{baseUrl}}"],
+          "path": ["apod", "today"],
+          "query": [
+            { "key": "date", "value": "2026-01-15", "disabled": true, "description": "Specific date YYYY-MM-DD" }
+          ]
+        },
+        "description": "Get today's Astronomy Picture of the Day, or a specific date."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('APOD data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('title');",
+              "    pm.expect(json.data).to.have.property('date');",
+              "    pm.expect(json.data).to.have.property('explanation');",
+              "    pm.expect(json.data).to.have.property('url');",
+              "    pm.expect(json.data).to.have.property('mediaType');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Random APODs",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/apod/random?count=3",
+          "host": ["{{baseUrl}}"],
+          "path": ["apod", "random"],
+          "query": [
+            { "key": "count", "value": "3", "description": "Number of random APODs (1-10)" }
+          ]
+        },
+        "description": "Get random Astronomy Pictures of the Day."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns array of APODs', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.be.an('array');",
+              "    pm.expect(json.data.length).to.be.at.most(10);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get APOD Range",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/apod/range?start_date=2026-01-01&end_date=2026-01-07",
+          "host": ["{{baseUrl}}"],
+          "path": ["apod", "range"],
+          "query": [
+            { "key": "start_date", "value": "2026-01-01" },
+            { "key": "end_date", "value": "2026-01-07" }
+          ]
+        },
+        "description": "Get APODs for a specific date range."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns array of APODs', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

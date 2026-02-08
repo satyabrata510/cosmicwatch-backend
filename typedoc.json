@@ -1,0 +1,26 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src"],
+  "entryPointStrategy": "expand",
+  "out": "docs/api",
+  "exclude": ["**/*.test.ts", "src/server.ts"],
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "name": "CosmicWatch API",
+  "readme": "README.md",
+  "validation": {
+    "notDocumented": false,
+    "invalidLink": false
+  },
+  "requiredToBeDocumented": [
+    "Class",
+    "Enum",
+    "Function",
+    "Interface",
+    "Module",
+    "Namespace",
+    "TypeAlias",
+    "Variable"
+  ]
+}

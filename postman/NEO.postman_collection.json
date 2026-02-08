@@ -1,0 +1,234 @@
+{
+  "info": {
+    "name": "Cosmic Watch — NEO",
+    "description": "NASA NeoWs API integration for asteroid data, lookups, risk analysis, and Sentry-enhanced assessment.\n\n**Rate Limit**: 30 requests / minute\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Get NEO Feed",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/neo/feed?start_date={{startDate}}&end_date={{endDate}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["neo", "feed"],
+          "query": [
+            { "key": "start_date", "value": "{{startDate}}", "description": "YYYY-MM-DD" },
+            { "key": "end_date", "value": "{{endDate}}", "description": "YYYY-MM-DD (max 7 day range)" }
+          ]
+        },
+        "description": "Fetch Near-Earth Objects for a date range from NASA NeoWs API.\nMax 7-day range per request. Asteroids are automatically cached in the database."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('NEO feed data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('element_count');",
+              "    pm.expect(json.data).to.have.property('near_earth_objects');",
+              "});",
+              "",
+              "pm.test('Save first asteroid ID for lookup', function () {",
+              "    const json = pm.response.json();",
+              "    const dates = Object.keys(json.data.near_earth_objects);",
+              "    if (dates.length > 0) {",
+              "        const asteroids = json.data.near_earth_objects[dates[0]];",
+              "        if (asteroids && asteroids.length > 0) {",
+              "            pm.environment.set('asteroidId', asteroids[0].neo_reference_id);",
+              "        }",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get NEO Feed (Default — Today)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/neo/feed",
+          "host": ["{{baseUrl}}"],
+          "path": ["neo", "feed"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns today feed', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookup Asteroid by ID",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/neo/lookup/{{asteroidId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["neo", "lookup", "{{asteroidId}}"]
+        },
+        "description": "Get detailed information about a specific asteroid by NEO reference ID."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Asteroid data structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('neo_reference_id');",
+              "    pm.expect(json.data).to.have.property('name');",
+              "    pm.expect(json.data).to.have.property('estimated_diameter');",
+              "    pm.expect(json.data).to.have.property('close_approach_data');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookup Asteroid Risk",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/neo/lookup/{{asteroidId}}/risk",
+          "host": ["{{baseUrl}}"],
+          "path": ["neo", "lookup", "{{asteroidId}}", "risk"]
+        },
+        "description": "Get scientific risk analysis for a single asteroid using the Python risk engine."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Risk analysis structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('risk_score');",
+              "    pm.expect(json.data).to.have.property('risk_level');",
+              "    pm.expect(json.data).to.have.property('torino_scale');",
+              "    pm.expect(json.data).to.have.property('palermo_scale');",
+              "    pm.expect(json.data).to.have.property('score_breakdown');",
+              "    pm.expect(json.data.risk_score).to.be.within(0, 100);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookup Asteroid Sentry Risk",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/neo/lookup/{{asteroidId}}/sentry-risk",
+          "host": ["{{baseUrl}}"],
+          "path": ["neo", "lookup", "{{asteroidId}}", "sentry-risk"]
+        },
+        "description": "Get Sentry-enhanced risk analysis combining NeoWs data with real CNEOS Sentry impact monitoring data."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200 or 404', function () {",
+              "    pm.expect([200, 404]).to.include(pm.response.code);",
+              "});",
+              "",
+              "pm.test('Sentry risk structure (if available)', function () {",
+              "    if (pm.response.code === 200) {",
+              "        const json = pm.response.json();",
+              "        pm.expect(json.success).to.be.true;",
+              "        pm.expect(json.data).to.have.property('sentry_available');",
+              "        pm.expect(json.data).to.have.property('real_impact_probability');",
+              "        pm.expect(json.data).to.have.property('data_source');",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Batch Risk Analysis",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/neo/risk?start_date={{startDate}}&end_date={{endDate}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["neo", "risk"],
+          "query": [
+            { "key": "start_date", "value": "{{startDate}}" },
+            { "key": "end_date", "value": "{{endDate}}" }
+          ]
+        },
+        "description": "Batch risk analysis on all NEOs for a date range using the Python risk engine.\n\nResults sorted by risk score descending."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Risk analysis structure', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('totalAnalyzed');",
+              "    pm.expect(json.data).to.have.property('assessments');",
+              "    pm.expect(json.data.assessments).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

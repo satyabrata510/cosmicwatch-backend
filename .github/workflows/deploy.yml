@@ -1,0 +1,145 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Backend to AWS EC2
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create .env file
+        run: |
+          cat > .env << ENVFILE
+          NODE_ENV=production
+          PORT=4000
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          REDIS_URL=${{ secrets.REDIS_URL }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN=7d
+          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_REFRESH_EXPIRES_IN=30d
+          NASA_API_KEY=${{ secrets.NASA_API_KEY }}
+          NASA_API_BASE_URL=https://api.nasa.gov/neo/rest/v1
+          API_VERSION=v1
+          LOG_LEVEL=info
+          RATE_LIMIT_WINDOW_MS=900000
+          RATE_LIMIT_MAX_REQUESTS=100
+          ENVFILE
+
+      - name: Copy .env to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} "mkdir -p ~/cosmicwatch-backend"
+          scp -o StrictHostKeyChecking=no .env ec2-user@${{ secrets.EC2_HOST }}:~/cosmicwatch-backend/.env
+
+      - name: Deploy to EC2
+        env:
+          EC2_USER: ec2-user
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+        run: |
+          ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
+            set -e
+            
+            # Start Docker if not running
+            if ! sudo systemctl is-active --quiet docker; then
+              echo "Starting Docker service..."
+              sudo systemctl start docker
+              sudo systemctl enable docker
+            fi
+            
+            # Update Docker to latest version
+            echo "Updating Docker..."
+            sudo yum update -y docker
+            sudo systemctl restart docker
+            
+            # Install/Update Docker Buildx
+            if ! docker buildx version &> /dev/null || [[ $(docker buildx version | grep -oP 'v\K[0-9]+\.[0-9]+' | head -1) < "0.17" ]]; then
+              echo "Installing Docker Buildx..."
+              BUILDX_VERSION=$(curl -s https://api.github.com/repos/docker/buildx/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+              mkdir -p ~/.docker/cli-plugins
+              curl -L "https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64" -o ~/.docker/cli-plugins/docker-buildx
+              chmod +x ~/.docker/cli-plugins/docker-buildx
+              sudo cp ~/.docker/cli-plugins/docker-buildx /usr/libexec/docker/cli-plugins/docker-buildx || true
+            fi
+            
+            # Install Docker Compose if not present
+            if ! command -v docker-compose &> /dev/null; then
+              echo "Installing Docker Compose..."
+              sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+              sudo chmod +x /usr/local/bin/docker-compose
+              sudo ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+            fi
+            
+            # Ensure ec2-user can run docker
+            if ! groups | grep -q docker; then
+              sudo usermod -aG docker ec2-user
+              echo "Added ec2-user to docker group. Running with sudo for this session..."
+              USE_SUDO="sudo"
+            else
+              USE_SUDO=""
+            fi
+            
+            cd ~/cosmicwatch-backend || mkdir -p ~/cosmicwatch-backend
+            
+            # Pull latest code
+            if [ -d .git ]; then
+              git fetch origin
+              git reset --hard origin/main
+              git clean -fd
+            else
+              git clone https://github.com/satyabrata510/cosmicwatch-backend.git .
+            fi
+            
+            # Stop existing containers
+            $USE_SUDO docker-compose -f docker/docker-compose.prod.yml --env-file .env down || true
+            
+            # Remove old images to free space
+            $USE_SUDO docker image prune -af || true
+            
+            # Build and start containers
+            $USE_SUDO docker-compose -f docker/docker-compose.prod.yml --env-file .env build --no-cache
+            $USE_SUDO docker-compose -f docker/docker-compose.prod.yml --env-file .env up -d
+            
+            # Run database migrations
+            $USE_SUDO docker-compose -f docker/docker-compose.prod.yml --env-file .env exec -T backend sh -c "pnpm exec prisma migrate deploy" || echo "Migration failed or already applied"
+            
+            # Show logs
+            $USE_SUDO docker-compose -f docker/docker-compose.prod.yml --env-file .env logs --tail=50
+          EOF
+
+      - name: Verify deployment
+        run: |
+          sleep 10
+          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/cosmicwatch-backend
+            
+            # Check if we need sudo
+            if ! groups | grep -q docker; then
+              USE_SUDO="sudo"
+            else
+              USE_SUDO=""
+            fi
+            
+            $USE_SUDO docker-compose -f docker/docker-compose.prod.yml --env-file .env ps
+            
+            # Test health endpoint
+            curl -f http://localhost:4000/api/v1/health || echo "Health check failed"
+          EOF
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/id_rsa

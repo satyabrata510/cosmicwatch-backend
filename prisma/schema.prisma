@@ -1,0 +1,130 @@
+// ═══════════════════════════════════════════════════════════════
+//  COSMIC WATCH — Prisma Database Schema
+// ═══════════════════════════════════════════════════════════════
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── User Model ────────────────────────────────────────────────
+model User {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  password      String
+  role          Role      @default(USER)
+  avatar        String?
+  isVerified    Boolean   @default(false) @map("is_verified")
+  lastLoginAt   DateTime? @map("last_login_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  watchlist     Watchlist[]
+  alerts        Alert[]
+  chatMessages  ChatMessage[]
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  RESEARCHER
+  ADMIN
+}
+
+// ── Watchlist Model ───────────────────────────────────────────
+model Watchlist {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  asteroidId      String   @map("asteroid_id") @db.VarChar(50)
+  asteroidName    String   @map("asteroid_name") @db.VarChar(255)
+  alertOnApproach Boolean  @default(true) @map("alert_on_approach")
+  alertDistanceKm Float    @default(7500000) @map("alert_distance_km")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, asteroidId])
+  @@index([userId])
+  @@index([asteroidId])
+  @@map("watchlists")
+}
+
+// ── Alert Model ───────────────────────────────────────────────
+model Alert {
+  id              String      @id @default(uuid())
+  userId          String      @map("user_id")
+  asteroidId      String      @map("asteroid_id") @db.VarChar(50)
+  asteroidName    String      @map("asteroid_name") @db.VarChar(255)
+  alertType       AlertType   @map("alert_type")
+  message         String      @db.Text
+  riskLevel       RiskLevel   @map("risk_level")
+  isRead          Boolean     @default(false) @map("is_read")
+  approachDate    DateTime    @map("approach_date")
+  missDistanceKm  Float       @map("miss_distance_km")
+  velocityKmph    Float       @map("velocity_kmph")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([asteroidId])
+  @@index([isRead])
+  @@map("alerts")
+}
+
+enum AlertType {
+  CLOSE_APPROACH
+  HAZARDOUS_DETECTED
+  WATCHLIST_UPDATE
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ── Chat Message Model ────────────────────────────────────────
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  roomId    String   @map("room_id") @db.VarChar(100)
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([roomId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+// ── Cached Asteroid Data ──────────────────────────────────────
+model CachedAsteroid {
+  id                  String   @id @default(uuid())
+  neoReferenceId      String   @unique @map("neo_reference_id") @db.VarChar(50)
+  name                String   @db.VarChar(255)
+  absoluteMagnitude   Float    @map("absolute_magnitude")
+  isHazardous         Boolean  @map("is_hazardous")
+  estimatedDiameterMin Float   @map("estimated_diameter_min")
+  estimatedDiameterMax Float   @map("estimated_diameter_max")
+  dataJson            Json     @map("data_json")
+  lastFetchedAt       DateTime @default(now()) @map("last_fetched_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  @@index([isHazardous])
+  @@index([lastFetchedAt])
+  @@map("cached_asteroids")
+}

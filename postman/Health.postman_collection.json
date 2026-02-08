@@ -1,0 +1,44 @@
+{
+  "info": {
+    "name": "Cosmic Watch — Health",
+    "description": "Server health check endpoint.\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Returns API operational status, uptime, and server timestamp."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response has success field', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.message).to.include('operational');",
+              "    pm.expect(json).to.have.property('uptime');",
+              "    pm.expect(json).to.have.property('timestamp');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

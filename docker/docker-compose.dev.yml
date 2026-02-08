@@ -1,0 +1,113 @@
+# ═══════════════════════════════════════════════════════════════
+#  COSMIC WATCH — Docker Compose (Development)
+#  Full stack: PostgreSQL + Node.js Backend + Python Risk Engine
+#  Hot-reload, debug port, volume mounts
+# ═══════════════════════════════════════════════════════════════
+
+name: cosmicwatch-dev
+
+services:
+  # ── PostgreSQL Database ────────────────────────────────────────
+  db:
+    image: postgres:18-alpine
+    container_name: cosmicwatch-db-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cosmicwatch
+      POSTGRES_PASSWORD: cosmicwatch_secret
+      POSTGRES_DB: cosmicwatch_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cosmicwatch -d cosmicwatch_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cosmicwatch-network
+
+  # ── Redis Cache ────────────────────────────────────────────────
+  redis:
+    image: redis:8-alpine
+    container_name: cosmicwatch-redis-dev
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", "60", "1000"]
+    networks:
+      - cosmicwatch-network
+
+  # ── Python Risk Analysis Engine ──────────────────────────────
+  risk-engine:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.risk-engine
+    container_name: cosmicwatch-risk-engine-dev
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      RISK_ENGINE_PORT: 8000
+      RISK_ENGINE_HOST: 0.0.0.0
+      LOG_LEVEL: debug
+    volumes:
+      - ../risk-engine/app:/app/app    # Hot-reload Python source
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    command: ["uvicorn", "app.main:combined_asgi_app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    networks:
+      - cosmicwatch-network
+
+  # ── Node.js Backend API (Development) ──────────────────────────
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.dev
+    container_name: cosmicwatch-backend-dev
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:${PORT:-4000}"
+      - "9229:9229"   # Node.js debug port
+    env_file:
+      - ../.env
+    environment:
+      # Only override values that differ inside Docker networking
+      DATABASE_URL: postgresql://cosmicwatch:cosmicwatch_secret@db:5432/cosmicwatch_db?schema=public
+      RISK_ENGINE_URL: http://risk-engine:8000
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../src:/app/src              # Hot-reload Node.js source
+      - ../prisma:/app/prisma        # Sync schema changes
+      - /app/node_modules            # Prevent host overwrite
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      risk-engine:
+        condition: service_healthy
+    networks:
+      - cosmicwatch-network
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+
+networks:
+  cosmicwatch-network:
+    driver: bridge

@@ -1,0 +1,43 @@
+# ═══════════════════════════════════════════════════════════════
+#  COSMIC WATCH — Development Dockerfile (Node.js Backend)
+#  Hot-reload with tsx, full dev tooling
+# ═══════════════════════════════════════════════════════════════
+
+FROM node:22-slim
+
+LABEL maintainer="Cosmic Watch Team"
+LABEL description="Development image with hot-reload"
+
+WORKDIR /app
+
+# Install system deps (curl for healthcheck, openssl for Prisma)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# Copy dependency manifests
+COPY package.json pnpm-lock.yaml* ./
+
+# Install ALL dependencies (including devDependencies)
+RUN pnpm install --frozen-lockfile
+
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+RUN pnpm exec prisma generate
+
+# Copy source (overridden by volume mount in compose for hot-reload)
+COPY . .
+
+# Expose ports: API + Debug
+EXPOSE 4000 9229
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:4000/api/v1/health || exit 1
+
+# Run migrations then start with hot-reload
+CMD ["sh", "-c", "pnpm exec prisma db push && pnpm dev"]

@@ -1,0 +1,169 @@
+{
+  "info": {
+    "name": "Cosmic Watch — Watchlist",
+    "description": "Manage user's asteroid watchlist.\n\n**All routes require authentication** (Bearer token).\n\n## Base URL\n`http://localhost:4000/api/v1`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:4000/api/v1" }],
+  "item": [
+    {
+      "name": "Add to Watchlist",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"asteroidId\": \"{{asteroidId}}\",\n  \"asteroidName\": \"465633 (2009 JR5)\",\n  \"alertOnApproach\": true,\n  \"alertDistanceKm\": 7500000\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/watchlist",
+          "host": ["{{baseUrl}}"],
+          "path": ["watchlist"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test('Watchlist item created', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.have.property('id');",
+              "    pm.expect(json.data).to.have.property('asteroidId');",
+              "    pm.expect(json.data).to.have.property('alertOnApproach');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Add to Watchlist — Duplicate (409)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"asteroidId\": \"{{asteroidId}}\",\n  \"asteroidName\": \"465633 (2009 JR5)\",\n  \"alertOnApproach\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/watchlist",
+          "host": ["{{baseUrl}}"],
+          "path": ["watchlist"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 409', function () {",
+              "    pm.response.to.have.status(409);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Watchlist",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/watchlist?page=1&limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["watchlist"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "20" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Paginated watchlist response', function () {",
+              "    const json = pm.response.json();",
+              "    pm.expect(json.success).to.be.true;",
+              "    pm.expect(json.data).to.be.an('array');",
+              "    pm.expect(json.meta).to.have.property('page');",
+              "    pm.expect(json.meta).to.have.property('total');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Remove from Watchlist",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/watchlist/{{asteroidId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["watchlist", "{{asteroidId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Remove from Watchlist — Not Found (404)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/watchlist/9999999",
+          "host": ["{{baseUrl}}"],
+          "path": ["watchlist", "9999999"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404', function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

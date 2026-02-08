@@ -1,0 +1,29 @@
+# Run type checking first (fast fail on type errors)
+echo "🔍 Running type check..."
+npx tsc --noEmit || {
+    echo "❌ TypeScript type check failed!"
+    exit 1
+}
+
+# Run TSDoc validation via TypeDoc
+echo "📝 Checking TSDoc comments..."
+npx typedoc 2>/dev/null || {
+    echo "❌ TSDoc validation failed! Fix documentation errors."
+    exit 1
+}
+
+# Run lint-staged for formatting and linting
+echo "🧹 Running lint-staged..."
+npx lint-staged || {
+    echo "❌ Lint-staged failed!"
+    exit 1
+}
+
+# Run biome check on all staged files
+echo "🔬 Running biome check..."
+npx biome check --staged --no-errors-on-unmatched || {
+    echo "❌ Biome check failed!"
+    exit 1
+}
+
+echo "✅ All checks passed!"
